@@ -1,10 +1,8 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Squelette de programme pour tp de reco de formes 	%%%%%
-%%%%%   Cl�ment Chatelain          janvier 2013		%%%%%
-%%%%%   D�partement ASI - INSA de Rouen 		%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Projet DOC Rdf 2015  |BARON GUTZWILLER ASI 4|
+% <<asir.jpg>>
 
-clear all;
+%%% _RàZ_
+close all; clc; clear all;
 
 %%%%%%%%%%%%%%%%%%%% apprentissage %%%%%%%%%%%%%%%%%%%%%%%%%
 im = imread('app.tif'); % lecture fichier image d'apprentissage
@@ -89,6 +87,10 @@ end
 confusionDEM = zeros(10,10)
 confusionDEM
 
+%% *Annexe 1* : Code MATLAB
+% Voici une copie du code matlab qui vient d'être exécuté :
 
+system('cat squelette.m');
 
-
+%% _*INSA de Rouen* - 2015_
+% <<insa.png>>
