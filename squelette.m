@@ -4,7 +4,7 @@
 %%% _RàZ_
 close all; clc; clear all;
 
-%%%%%%%%%%%%%%%%%%%% apprentissage %%%%%%%%%%%%%%%%%%%%%%%%%
+%% apprentissage %%%%%%%%%%%%%%%%%%%%%%%%%
 im = imread('app.tif'); % lecture fichier image d'apprentissage
 coordImages = extractionImages(im); 
 nbImageBaseApp = length(coordImages);
@@ -51,7 +51,7 @@ for i=0:9
     end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% decision %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% decision euclid %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 imTest = imread('test.tif'); % lecture fichier image test
 coordImagesTest = extractionImages(imTest);
 length(coordImagesTest)
@@ -82,15 +82,73 @@ for (iImage=1 : nbImageBaseTest)
     end
     %%%%%%%%%%%%%%%%%%%%%%
 end
-%%%%%%%%% Calcul des performances %%%%%%%%
+
+%% Calcul des performances euclid %%%%%%%%
 
 confusionDEM = zeros(10,10)
+
+for i=1:10
+    for j=1:10
+        confusionDEM(i,(k((i-1)*10+j))+1) = confusionDEM(i,(k((i-1)*10+j))+1) + 1;
+    end
+end
+confusionDEM = confusionDEM / 10;
+
+confusionDEM 
+
+%% decision kppv %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+imTest = imread('test.tif'); % lecture fichier image test
+coordImagesTest = extractionImages(imTest);
+length(coordImagesTest)
+nbImageBaseTest = length(coordImagesTest);
+kp = 5;
+
+for (iImage=1 : nbImageBaseTest)
+    largeur = coordImagesTest(iImage, 2) - coordImagesTest(iImage, 1) - 2;
+    hauteur = coordImagesTest(iImage, 4) - coordImagesTest(iImage, 3) - 2;
+    
+    % extraction image
+    imageChiffre = subimage(imTest, largeur, hauteur, coordImagesTest(iImage, 1), coordImagesTest(iImage, 3));
+    
+    % crop
+    imageChiffreCroppee = crop(imageChiffre);    
+    imagesc(imageChiffreCroppee); %afficher les imagettes de chiffres
+    %%%%%% ICI c'est à vous de Jouer !!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % appliquer le modèle sauvegardé sur les chiffres de l'image de test ...
+    caracImage = [extraitProfils(imageChiffreCroppee, n) reshape(extraitDensites(imageChiffreCroppee, m, n), 1, m*n)];
+    distance = zeros(2,200)
+    
+    distance(:, 1) = [0 norm(modele(:,1)'-caracImage, 2)];
+    for i=2:200
+        distance(:,i) = [floor((i-1)/20) norm(modele(:,i)'-caracImage, 2)];
+    end
+    
+    distb = sortrows(distance', 2)';
+    
+    resultats(iImage) = mode(distb(1,1:kp));
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%
+end
+
+%% Calcul des performances kppv %%%%%%%%
+
+confusionKPPV = zeros(10,10)
+
+for i=1:10
+    for j=1:10
+        confusionKPPV(i,(resultats((i-1)*10+j))+1) = confusionKPPV(i,(resultats((i-1)*10+j))+1) + 1;
+    end
+end
+confusionKPPV = confusionKPPV / 10;
+
 confusionDEM
+confusionKPPV
 
 %% *Annexe 1* : Code MATLAB
 % Voici une copie du code matlab qui vient d'être exécuté :
 
-system('cat squelette.m');
+% system('cat squelette.m');
 
 %% _*INSA de Rouen* - 2015_
 % <<insa.png>>
