@@ -2,9 +2,9 @@ function confusion = make_confusion( results )
 %make_confusion Make confusion matrix from results
 %   Detailed explanation goes here
 
-lo = size(results);
+lo = sqrt(size(results,2));
 
-confusion = zeros(lo,lo)
+confusion = zeros(lo,lo);
 
 for i=1:lo
     for j=1:lo

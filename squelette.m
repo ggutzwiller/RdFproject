@@ -83,14 +83,7 @@ end
 
 %% Calcul des performances euclid %%%%%%%%
 
-confusionDEM = zeros(10,10)
-
-for i=1:10
-    for j=1:10
-        confusionDEM(i,(k((i-1)*10+j))+1) = confusionDEM(i,(k((i-1)*10+j))+1) + 1;
-    end
-end
-confusionDEM = confusionDEM / 10;
+confusionDEM = make_confusion(k);
 
 confusionDEM 
 
@@ -131,14 +124,7 @@ for tests=1:5
 
 %%% Calcul des performances kppv %%%%%%%%
 
-confusionKPPV = zeros(10,10)
-
-for i=1:10
-    for j=1:10
-        confusionKPPV(i,(resultats((i-1)*10+j))+1) = confusionKPPV(i,(resultats((i-1)*10+j))+1) + 1;
-    end
-end
-confusionKPPV = confusionKPPV / 10;
+confusionKPPV = make_confusion(resultats);
 
 succes(tests,:) =  diag(confusionKPPV);
 
