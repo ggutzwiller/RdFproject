@@ -1,6 +1,6 @@
 function confusion = make_confusion( results )
 %make_confusion Make confusion matrix from results
-%   Detailed explanation goes here
+%   From the resuts in one row create the confusion matrix
 
 lo = sqrt(size(results,2));
 
