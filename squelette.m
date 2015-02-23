@@ -5,9 +5,9 @@
 close all; clc; clear all;
 
 %% apprentissage %%%%%%%%%%%%%%%%%%%%%%%%%
-im = imread('app.tif'); % lecture fichier image d'apprentissage
-coordImages = extractionImages(im); 
-nbImageBaseApp = length(coordImages);
+
+[nbImageBaseApp, imagesChiffreCroppe] = crop_image('app.tif');
+
 sprintf('APPRENTISSAGE detection images OK : %d images detectees\n', nbImageBaseApp);
 
 m = 5;
@@ -17,21 +17,10 @@ lesdensites = zeros(m,n,nbImageBaseApp);
 modele = zeros(n*m+n*2, nbImageBaseApp);
 
 for (iImage=1 : nbImageBaseApp)
-    iImage;
-    % localisation et extraction des imagettes
-    largeur = coordImages(iImage, 2) - coordImages(iImage, 1) - 2;
-    hauteur = coordImages(iImage, 4) - coordImages(iImage, 3) - 2;
-    x0 = coordImages(iImage, 1);
-    y0 = coordImages(iImage, 3);
-    imageChiffre = subimage(im, largeur, hauteur, x0, y0);
-  
-    % crop (supprimer les bords blancs)
-    imageChiffreCroppee = crop(imageChiffre);    
-    %imagesc(imageChiffreCroppee); %afficher les imagettes de chiffres    
-    
+
     % extraire des caractéristiques ...
-    lesprofils(:,iImage) = extraitProfils(imageChiffreCroppee, n);
-    lesdensites(:,:,iImage) = extraitDensites(imageChiffreCroppee, m, n);
+    lesprofils(:,iImage) = extraitProfils(imagesChiffreCroppe{iImage}, n);
+    lesdensites(:,:,iImage) = extraitDensites(imagesChiffreCroppe{iImage}, m, n);
     % faire un modèle ...
     modele(:,iImage) = [lesprofils(:,iImage)' reshape(lesdensites(:,:,iImage), 1, m*n)]    
     % le sauvegarder ...
@@ -50,26 +39,12 @@ for i=0:9
 end
 
 %% decision euclid %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-imTest = imread('test.tif'); % lecture fichier image test
-coordImagesTest = extractionImages(imTest);
-length(coordImagesTest)
-nbImageBaseTest = length(coordImagesTest);
-
-
+[nbImageBaseTest, imagesChiffreCroppe] = crop_image('test.tif');
 
 for (iImage=1 : nbImageBaseTest)
-    largeur = coordImagesTest(iImage, 2) - coordImagesTest(iImage, 1) - 2;
-    hauteur = coordImagesTest(iImage, 4) - coordImagesTest(iImage, 3) - 2;
-    
-    % extraction image
-    imageChiffre = subimage(imTest, largeur, hauteur, coordImagesTest(iImage, 1), coordImagesTest(iImage, 3));
-    
-    % crop
-    imageChiffreCroppee = crop(imageChiffre);    
-    %imagesc(imageChiffreCroppee); %afficher les imagettes de chiffres
 
     % appliquer le modèle sauvegardé sur les chiffres de l'image de test ...
-    caracImage = [extraitProfils(imageChiffreCroppee, n) reshape(extraitDensites(imageChiffreCroppee, m, n), 1, m*n)];
+    caracImage = [extraitProfils(imagesChiffreCroppe{iImage}, n) reshape(extraitDensites(imagesChiffreCroppe{iImage}, m, n), 1, m*n)];
     distance = norm(modeleDEM(1,:)-caracImage, 2);
     k(iImage) = 0;
     for i=2:10
@@ -90,25 +65,13 @@ confusionDEM
 
 
 %% decision kppv %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-imTest = imread('test.tif'); % lecture fichier image test
-coordImagesTest = extractionImages(imTest);
-length(coordImagesTest)
-nbImageBaseTest = length(coordImagesTest);
+
 for tests=1:5
     kp=tests;
     for (iImage=1 : nbImageBaseTest)
-        largeur = coordImagesTest(iImage, 2) - coordImagesTest(iImage, 1) - 2;
-        hauteur = coordImagesTest(iImage, 4) - coordImagesTest(iImage, 3) - 2;
-
-        % extraction image
-        imageChiffre = subimage(imTest, largeur, hauteur, coordImagesTest(iImage, 1), coordImagesTest(iImage, 3));
-
-        % crop
-        imageChiffreCroppee = crop(imageChiffre);    
-        %imagesc(imageChiffreCroppee); %afficher les imagettes de chiffres
 
         % appliquer le modèle sauvegardé sur les chiffres de l'image de test ...
-        caracImage = [extraitProfils(imageChiffreCroppee, n) reshape(extraitDensites(imageChiffreCroppee, m, n), 1, m*n)];
+        caracImage = [extraitProfils(imagesChiffreCroppe{iImage}, n) reshape(extraitDensites(imagesChiffreCroppe{iImage}, m, n), 1, m*n)];
         distance = zeros(2,200)
 
         distance(:, 1) = [0 norm(modele(:,1)'-caracImage, 2)];
