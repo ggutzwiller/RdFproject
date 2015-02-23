@@ -33,6 +33,6 @@ for (iLigne = 1:nbLigne)
             end
         end
     end
-    sprintf('ligne %d ordonnée de %d à %d : %d images detectées\n', iLigne, y0_ligne, y1_ligne, nbImage)
+    %sprintf('ligne %d ordonnée de %d à %d : %d images detectées\n', iLigne, y0_ligne, y1_ligne, nbImage)
 
 end
