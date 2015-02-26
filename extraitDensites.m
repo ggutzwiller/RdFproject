@@ -3,8 +3,8 @@ function D = extraitDensites( imagette, m, n )
     imagette = ~imagette;
     
     [h, l] = size(imagette);
-    y = floor(linspace(1, l, m+1));
-    x = floor(linspace(1, h, n+1));
+    x = floor(linspace(1, h, m+1));
+    y = floor(linspace(1, l, n+1));
     k = (l*h)/(m*n);
     
     D = zeros(m,n);
