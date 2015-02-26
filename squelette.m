@@ -4,22 +4,25 @@
 %%% _RàZ_
 close all; clc; clear all;
 
+[nbImageBaseTest, imagesChiffreCroppeT] = crop_image('test.tif');
+
 %% apprentissage %%%%%%%%%%%%%%%%%%%%%%%%%
 
 [nbImageBaseApp, imagesChiffreCroppe] = crop_image('app.tif');
 
 %sprintf('APPRENTISSAGE detection images OK : %d images detectees\n', nbImageBaseApp);
 
-m = 5;
-n=5;%nb de traits
-lesprofils = zeros(n*2, nbImageBaseApp);
+for m = 10 : 10
+for n = 5 : 5
+for nTraits = 10 : 10 %nb de traits
+lesprofils = zeros(nTraits*2, nbImageBaseApp);
 lesdensites = zeros(m,n,nbImageBaseApp);
-modele = zeros(n*m+n*2, nbImageBaseApp);
+modele = zeros(n*m+nTraits*2, nbImageBaseApp);
 
 for (iImage=1 : nbImageBaseApp)
 
     % extraire des caractéristiques ...
-    lesprofils(:,iImage) = extraitProfils(imagesChiffreCroppe{iImage}, n);
+    lesprofils(:,iImage) = extraitProfils(imagesChiffreCroppe{iImage}, nTraits);
     lesdensites(:,:,iImage) = extraitDensites(imagesChiffreCroppe{iImage}, m, n);
     % faire un modèle ...
     modele(:,iImage) = [lesprofils(:,iImage)' reshape(lesdensites(:,:,iImage), 1, m*n)];
@@ -31,20 +34,19 @@ for (iImage=1 : nbImageBaseApp)
 end
 
 
-modeleDEM = zeros(10,35);
+modeleDEM = zeros(10,size(modele,1));
 for i=0:9
-    for j = 1:35
+    for j = 1:size(modele,1)
         modeleDEM(i+1, j) = sum(modele(j, i*20+1:(i+1)*20))/20;
     end
 end
 
 %% decision euclid %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[nbImageBaseTest, imagesChiffreCroppe] = crop_image('test.tif');
 
 for (iImage=1 : nbImageBaseTest)
     
     % appliquer le modèle sauvegardé sur les chiffres de l'image de test ...
-    caracImage = [extraitProfils(imagesChiffreCroppe{iImage}, n)' reshape(extraitDensites(imagesChiffreCroppe{iImage}, m, n), 1, m*n)];
+    caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' reshape(extraitDensites(imagesChiffreCroppeT{iImage}, m, n), 1, m*n)];
     distance = norm(modeleDEM(1,:)-caracImage, 2);
     k(iImage) = 0;
     for i=2:10
@@ -62,16 +64,16 @@ confusionDEM = make_confusion(k);
 
 confusionDEM 
 
-
+diag(confusionDEM)'
 
 %% decision kppv %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for tests=1:5
+for tests=2:2
     kp=tests;
     for (iImage=1 : nbImageBaseTest)
 
         % appliquer le modèle sauvegardé sur les chiffres de l'image de test ...
-        caracImage = [extraitProfils(imagesChiffreCroppe{iImage}, n)' reshape(extraitDensites(imagesChiffreCroppe{iImage}, m, n), 1, m*n)];
+        caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' reshape(extraitDensites(imagesChiffreCroppeT{iImage}, m, n), 1, m*n)];
         distance = zeros(2,200);
 
         distance(:, 1) = [0 norm(modele(:,1)'-caracImage, 2)];
@@ -87,15 +89,25 @@ for tests=1:5
 
 %%% Calcul des performances kppv %%%%%%%%
 
-confusionKPPV = make_confusion(resultats);
+confusionKPPV = make_confusion(resultats)
 
-succes(tests,:) =  diag(confusionKPPV);
+succes(tests,:) = diag(confusionKPPV);
 
 end
 
 succes
 
 succesmoy = mean(succes')'
+
+%succesTraitFull(:,nTraits) = succesmoy;
+
+succesD(m,n,nTraits) = max(succesmoy);
+
+end
+end
+end
+
+succesD
 
 % Commentaire on qu'on optimal pour k = 2
 %% *Annexe 1* : Code MATLAB
