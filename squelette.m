@@ -16,16 +16,16 @@ for m = 10 : 10
 for n = 5 : 5
 for nTraits = 10 : 10 %nb de traits
 lesprofils = zeros(nTraits*2, nbImageBaseApp);
-lesdensites = zeros(m,n,nbImageBaseApp);
+lesdensites = zeros(m*n,nbImageBaseApp);
 modele = zeros(n*m+nTraits*2, nbImageBaseApp);
 
 for (iImage=1 : nbImageBaseApp)
 
     % extraire des caractéristiques ...
     lesprofils(:,iImage) = extraitProfils(imagesChiffreCroppe{iImage}, nTraits);
-    lesdensites(:,:,iImage) = extraitDensites(imagesChiffreCroppe{iImage}, m, n);
+    lesdensites(:,iImage) = extraitDensites(imagesChiffreCroppe{iImage}, m, n);
     % faire un modèle ...
-    modele(:,iImage) = [lesprofils(:,iImage)' reshape(lesdensites(:,:,iImage), 1, m*n)];
+    modele(:,iImage) = [lesprofils(:,iImage)' lesdensites(:,iImage)'];
     % le sauvegarder ...
     
     % Astuce : la classe de l'image courante est donnee par : iClasse = fix((iImage-1)/20)
@@ -46,7 +46,7 @@ end
 for (iImage=1 : nbImageBaseTest)
     
     % appliquer le modèle sauvegardé sur les chiffres de l'image de test ...
-    caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' reshape(extraitDensites(imagesChiffreCroppeT{iImage}, m, n), 1, m*n)];
+    caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' extraitDensites(imagesChiffreCroppeT{iImage}, m, n)'];
     distance = norm(modeleDEM(1,:)-caracImage, 2);
     k(iImage) = 0;
     for i=2:10
@@ -73,7 +73,7 @@ for tests=2:2
     for (iImage=1 : nbImageBaseTest)
 
         % appliquer le modèle sauvegardé sur les chiffres de l'image de test ...
-        caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' reshape(extraitDensites(imagesChiffreCroppeT{iImage}, m, n), 1, m*n)];
+        caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' extraitDensites(imagesChiffreCroppeT{iImage}, m, n)'];
         distance = zeros(2,200);
 
         distance(:, 1) = [0 norm(modele(:,1)'-caracImage, 2)];
