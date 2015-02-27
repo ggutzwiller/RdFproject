@@ -1,7 +1,7 @@
 %% Projet DOC Rdf 2015  |BARON GUTZWILLER ASI 4|
 % <<asir.jpg>>
 
-%%% _RàZ_
+%%% _RAZ_
 close all; clc; clear all;
 
 [nbImageBaseTest, imagesChiffreCroppeT] = crop_image('test.tif');
