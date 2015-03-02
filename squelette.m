@@ -4,113 +4,137 @@
 %%% _RAZ_
 close all; clc; clear all;
 
+%% *1 - Les données*
+% Base d'apprentissage :
+%
+% <<app.tif>>
+%
+% Base de test :
+%
+% <<test.tif>>
+
+%% *2 - Decoupe des imagettes*
+% Base d'apprentissage
+[nbImageBaseApp, imagesChiffreCroppe] = crop_image('app.tif');
+%%%
+% Base de test
 [nbImageBaseTest, imagesChiffreCroppeT] = crop_image('test.tif');
 
-%% apprentissage %%%%%%%%%%%%%%%%%%%%%%%%%
+%% *3 - Apprentissage du modèle*
 
-[nbImageBaseApp, imagesChiffreCroppe] = crop_image('app.tif');
+m = 10; %rangées de densitée
+n = 5; %col de densité
+nTraits = 10; %nb de traits
 
-%sprintf('APPRENTISSAGE detection images OK : %d images detectees\n', nbImageBaseApp);
-
-for m = 10 : 10
-for n = 5 : 5
-for nTraits = 10 : 10 %nb de traits
-lesprofils = zeros(nTraits*2, nbImageBaseApp);
-lesdensites = zeros(m*n,nbImageBaseApp);
 modele = zeros(n*m+nTraits*2, nbImageBaseApp);
 
-for (iImage=1 : nbImageBaseApp)
+%%
+% Voici la fonction d'extraction des caracteristiques de base :
+system('type extraireCaractBase.m');
 
-    % extraire des caractÃ©ristiques ...
-    lesprofils(:,iImage) = extraitProfils(imagesChiffreCroppe{iImage}, nTraits);
-    lesdensites(:,iImage) = extraitDensites(imagesChiffreCroppe{iImage}, m, n);
-    % faire un modÃ¨le ...
-    modele(:,iImage) = [lesprofils(:,iImage)' lesdensites(:,iImage)'];
-    % le sauvegarder ...
-    
-    % Astuce : la classe de l'image courante est donnee par : iClasse = fix((iImage-1)/20)
-    %sprintf('classe de l image %d : %d\n', iImage, fix((iImage-1)/20));
-    
+%%
+% On extrait les caracteristiques de la base d'apprentissage :
+for iImage=1 : nbImageBaseApp
+
+    % extraction des caracteristiques
+    caract = extraireCaractBase(imagesChiffreCroppe{iImage}, m, n, nTraits);
+    % creation du modele
+    modele(:,iImage) = caract;
+
 end
 
+%%%
+% Astuce : la classe de l'image courante est donnee par : iClasse = fix((iImage-1)/20)
+classes = @(i) floor((i-1)/20);
 
-modeleDEM = zeros(10,size(modele,1));
+%%%
+% Enfin, on sauvegarde le modele :
+save('modeleRDF.mat', 'modele');
+
+%% *4 - Classification*
+% Extraction des caracteristiques des exemples
+caractImagesTest = zeros(n*m+nTraits*2, nbImageBaseTest);
+
+for iImage=1 : nbImageBaseTest
+    caractImagesTest(:,iImage) = ...
+        extraireCaractBase(imagesChiffreCroppeT{iImage}, m, n, nTraits);
+end
+
+%% 4 - a : Reconaissance avec distance euclidienne minimale sur modele moyen
+
+% Creation du modele moyen
+modeleDEM = zeros(size(modele,1),10);
 for i=0:9
     for j = 1:size(modele,1)
-        modeleDEM(i+1, j) = sum(modele(j, i*20+1:(i+1)*20))/20;
+        modeleDEM(j, i+1) = sum(modele(j, i*20+1:(i+1)*20))/20;
     end
 end
 
-%% decision euclid %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Classes des images moyennes
+classeMoy = [ 0 1 2 3 4 5 6 7 8 9 ];
 
-for (iImage=1 : nbImageBaseTest)
+% Definition de la distance euclidienne
+dEuclid = @(x,y) sqrt(sum((x - y) .^ 2));
+
+resultatsEuclidMin = zeros(1,nbImageBaseTest);
+
+% Recherche du chiffre qui approche le plus du modele moyen
+for iImage=1 : nbImageBaseTest
     
-    % appliquer le modÃ¨le sauvegardÃ© sur les chiffres de l'image de test ...
-    caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' extraitDensites(imagesChiffreCroppeT{iImage}, m, n)'];
-    distance = norm(modeleDEM(1,:)-caracImage, 2);
-    k(iImage) = 0;
-    for i=2:10
-        if (norm(modeleDEM(i,:)-caracImage, 2) < distance)
-            distance = norm(modeleDEM(i,:)-caracImage, 2);
-            k(iImage) = i-1;
-        end
-    end
+resultatsEuclidMin(iImage) = ...
+    detClassdMin(caractImagesTest(:,iImage)',modeleDEM,classeMoy,dEuclid);
 
 end
 
-%% Calcul des performances euclid %%%%%%%%
+%% _Resultats de cette methode_
 
-confusionDEM = make_confusion(k);
+confusionDEM = make_confusion(resultatsEuclidMin);
 
-confusionDEM 
+%%
+% Voici sur les chiffres de 0 a 9 les taux de reconnaissance de cette methode :
+diag(confusionDEM)
 
-diag(confusionDEM)'
+%%
+% Soit un taux moyen de :
+mean(diag(confusionDEM))
 
-%% decision kppv %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 4 - b : Decision avec la methode des kppv
+%
+resultatsKppv = zeros(1,nbImageBaseTest);
 
-for tests=2:2
-    kp=tests;
-    for (iImage=1 : nbImageBaseTest)
+for tests=1:4
+    
+    for iImage=1 : nbImageBaseTest
 
-        % appliquer le modÃ¨le sauvegardÃ© sur les chiffres de l'image de test ...
-        caracImage = [extraitProfils(imagesChiffreCroppeT{iImage}, nTraits)' extraitDensites(imagesChiffreCroppeT{iImage}, m, n)'];
-        distance = zeros(2,200);
-
-        distance(:, 1) = [0 norm(modele(:,1)'-caracImage, 2)];
-        for i=2:200
-            distance(:,i) = [floor((i-1)/20) norm(modele(:,i)'-caracImage, 2)];
-        end
-
-        distb = sortrows(distance', 2)';
-
-        resultats(iImage) = mode(distb(1,1:kp));
+        tppv = kppv(caractImagesTest(:,iImage)',tests,modele,classes,dEuclid);
+        
+        resultatsKppv(iImage) = mode(tppv(1,:));
 
     end
 
-%%% Calcul des performances kppv %%%%%%%%
-
-confusionKPPV = make_confusion(resultats)
+confusionKPPV = make_confusion(resultatsKppv);
 
 succes(tests,:) = diag(confusionKPPV);
 
 end
 
+%% _Resultats de cette methode_
+% Voici les taux de reconnaissance de cette methode pour les k testes :
 succes
 
-succesmoy = mean(succes')'
+%%
+% Soit en taux moyen par k :
+mean(succes')
+%%%
+% On voit que le k optimal est 2.
 
-%succesTraitFull(:,nTraits) = succesmoy;
+%% kppv avec d'autres distances
+% Definition de la distance minkowski 3 et manhattan :
+dMinkow3 = @(x,y) nthroot(sum(abs(x - y) .^ 3),3);
+dManhat = @(x,y) sum(abs(x - y));
 
-succesD(m,n,nTraits) = max(succesmoy);
 
-end
-end
-end
-
-succesD
-
-% Commentaire on qu'on optimal pour k = 2
-%% *Annexe 1* : Code MATLAB
+%% *Annexe 1 :* Code MATLAB
 % Voici une copie du code matlab qui vient d'Ãªtre exÃ©cutÃ© :
 
 % system('cat squelette.m');

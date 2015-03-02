@@ -5,7 +5,6 @@ function D = extraitDensites( imagette, m, n )
     [h, l] = size(imagette);
     x = floor(linspace(1, h, m+1));
     y = floor(linspace(1, l, n+1));
-    k = (l*h)/(m*n);
     
     D = zeros(m*n,1);
     
@@ -15,7 +14,7 @@ function D = extraitDensites( imagette, m, n )
             % la matrice étant surtout composée de 0 la recherche va 2 fois
             % plus vite que la somme !! (vu avec "Run and Time")
             s = size(find(imagette(x(i):x(i+1)-1, y(j):y(j+1)-1)==1),1);
-            D((i-1)*n+j) = s/k;
+            D((i-1)*n+j) = s/((x(i+1)-x(i))*(y(j+1)-y(j)));
         end
     end    
 end
