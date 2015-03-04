@@ -3,6 +3,7 @@
 
 %%% _RAZ_
 close all; clc; clear all;
+format short g;
 
 %% *1 - Les données*
 % Base d'apprentissage :
@@ -98,6 +99,28 @@ diag(confusionDEM)
 % Soit un taux moyen de :
 mean(diag(confusionDEM))
 
+%% Test sans moyenner les classes
+
+% Recherche du chiffre qui approche le plus du modele
+for iImage=1 : nbImageBaseTest
+    
+resultatsEuclidMin(iImage) = ...
+    detClassdMin(caractImagesTest(:,iImage)',modele,classes,dEuclid);
+
+end
+
+%% _Resultats de cette methode_
+
+confusionDE = make_confusion(resultatsEuclidMin);
+
+%%
+% Voici sur les chiffres de 0 a 9 les taux de reconnaissance de cette methode :
+diag(confusionDE)
+
+%%
+% Soit un taux moyen de :
+mean(diag(confusionDE))
+
 %% 4 - b : Decision avec la methode des kppv
 %
 resultatsKppv = zeros(1,nbImageBaseTest);
@@ -128,11 +151,169 @@ mean(succes')
 %%%
 % On voit que le k optimal est 2.
 
-%% kppv avec d'autres distances
+%% Méthode des kppv avec d'autres distances
 % Definition de la distance minkowski 3 et manhattan :
 dMinkow3 = @(x,y) nthroot(sum(abs(x - y) .^ 3),3);
 dManhat = @(x,y) sum(abs(x - y));
 
+%%
+% Pour Manhattan :
+resultatsKppvMan = zeros(1,nbImageBaseTest);
+
+for iImage=1 : nbImageBaseTest
+
+    tppv = kppv(caractImagesTest(:,iImage)',2,modele,classes,dManhat);
+
+    resultatsKppvMan(iImage) = mode(tppv(1,:));
+
+end
+
+confusionKPPVMan = make_confusion(resultatsKppvMan)
+
+%%
+% Soit un taux moyen de réussite de :
+mean(diag(confusionKPPVMan))
+
+%%
+% Pour Minkowski de degré 3 :
+resultatsKppvMink = zeros(1,nbImageBaseTest);
+
+for iImage=1 : nbImageBaseTest
+
+    tppv = kppv(caractImagesTest(:,iImage)',2,modele,classes,dMinkow3);
+
+    resultatsKppvMink(iImage) = mode(tppv(1,:));
+
+end
+
+confusionKPPVMink = make_confusion(resultatsKppvMink)
+
+%%
+% Soit un taux moyen de réussite de :
+mean(diag(confusionKPPVMink))
+
+%%%
+% On gagne un pourcent de plus avec Minkowski de degré 3 mais les 9 posent 
+% toujours problème.
+
+%% Autres caractéristiques
+% Nous allons tenter de mettre en oeuvre d'autres caracteristiques comme la
+% trace vers la gauche ou vers la droite.
+% On recommence l'apprentissage :
+
+%%
+% Voici la fonction d'extraction des caracteristiques avec trace :
+system('type extraireCaractTraceGD.m');
+system('type traceGD.m');
+
+%%
+% On extrait les caracteristiques de la base d'apprentissage :
+for iImage=1 : nbImageBaseApp
+
+% extraction des caracteristiques pour la trace gauche
+caractTG = extraireCaractTraceGD(imagesChiffreCroppe{iImage}, 'g', m, n, nTraits);
+% creation du modele pour la trace gauche
+modeleTG(:,iImage) = caractTG;
+
+% extraction des caracteristiques pour la trace droite
+caractTD = extraireCaractTraceGD(imagesChiffreCroppe{iImage}, 'd', m, n, nTraits);
+% creation du modele pour la trace droite
+modeleTD(:,iImage) = caractTD;
+
+end
+
+%%%
+% On teste avec kppv Minkowski 3 et distance euclidienne mini :
+
+caractImagesTestG = zeros(n*m+nTraits, nbImageBaseTest);
+caractImagesTestD = zeros(n*m+nTraits, nbImageBaseTest);
+
+resultatsEuclidMinG = zeros(1,nbImageBaseTest);
+resultatsEuclidMinD = zeros(1,nbImageBaseTest);
+
+resultatsG = zeros(1,nbImageBaseTest);
+resultatsD = zeros(1,nbImageBaseTest);
+
+for iImage=1 : nbImageBaseTest
+
+    caractImagesTestG(:,iImage) = ...
+        extraireCaractTraceGD(imagesChiffreCroppeT{iImage}, 'g', m, n, nTraits);
+    
+    caractImagesTestD(:,iImage) = ...
+        extraireCaractTraceGD(imagesChiffreCroppeT{iImage}, 'd', m, n, nTraits);
+    
+    resultatsEuclidMinG(iImage) = ...
+    detClassdMin(caractImagesTestG(:,iImage)',modeleTG,classes,dEuclid);
+
+    resultatsEuclidMinD(iImage) = ...
+    detClassdMin(caractImagesTestD(:,iImage)',modeleTD,classes,dEuclid);
+    
+    tppvG = kppv(caractImagesTestG(:,iImage)',1,modeleTG,classes,dMinkow3);
+    
+    tppvD = kppv(caractImagesTestD(:,iImage)',1,modeleTD,classes,dMinkow3);
+
+    resultatsG(iImage) = mode(tppvG(1,:));
+    
+    resultatsD(iImage) = mode(tppvD(1,:));
+
+end
+
+%% Resultats pour la trace gauche
+confusionkppvG = make_confusion(resultatsG)
+confusionDEG = make_confusion(resultatsEuclidMinG)
+
+%%
+% Soit un taux moyen de réussite de :
+mean(diag(confusionkppvG))
+mean(diag(confusionDEG))
+
+%% Resultats pour la trace droite
+confusionkppvD = make_confusion(resultatsD)
+confusionDED = make_confusion(resultatsEuclidMinD)
+
+%%
+% Soit un taux moyen de réussite de :
+mean(diag(confusionkppvD))
+mean(diag(confusionDED))
+
+%% Caracteristique de la dernière chance avec trace gauche ET droite
+% Le but ici est de mieux discriminer les 9 :
+
+% Parametres optimaux :
+m = 8; n = 10;
+    
+% On extrait les caracteristiques de la base d'apprentissage :
+for iImage=1 : nbImageBaseApp
+
+% extraction des caracteristiques pour la trace gauche droite
+caractTGD = extraitDensites(traceGD(traceGD(imagesChiffreCroppe{iImage}, 'g'),'d'), m, n);
+
+% creation du modele pour la trace gauche droite
+modeleTGD(:,iImage) = caractTGD;
+
+end
+
+for iImage=1 : nbImageBaseTest
+
+    caractImagesTestGD(:,iImage) = ...
+        extraitDensites(traceGD(traceGD(imagesChiffreCroppeT{iImage}, 'g'),'d'), m, n);
+    
+    resultatsEuclidMinGD(iImage) = ...
+        detClassdMin(caractImagesTestGD(:,iImage)',modeleTGD,classes,dEuclid);
+
+end
+
+%% Combinaison des classifieurs
+% On va combiner le classifieur kppv minkoski3 avec le traceGD precedent :
+
+
+%% Resultats pour la trace gauche
+confusionDEGD = make_confusion(resultatsEuclidMinGD);
+diag(confusionDEGD);
+
+%%
+% Soit un taux moyen de réussite de :
+mean(diag(confusionDEGD))
 
 %% *Annexe 1 :* Code MATLAB
 % Voici une copie du code matlab qui vient d'Ãªtre exÃ©cutÃ© :
