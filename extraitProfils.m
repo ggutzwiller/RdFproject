@@ -11,4 +11,3 @@ function profil = extraitProfils( imagette, n )
     end
     profil = profil/l;
 end
-
