@@ -23,9 +23,10 @@ format short g;
 
 %% *3 - Apprentissage du modèle*
 
-m = 10; %rangées de densitée
-n = 5; %col de densité
-nTraits = 10; %nb de traits
+% Parametres optimaux
+m = 10; % rangées de densitée
+n = 5; % col de densité
+nTraits = 10; % nb de traits
 
 modele = zeros(n*m+nTraits*2, nbImageBaseApp);
 
@@ -206,6 +207,12 @@ mean(diag(confusionKPPVMink))
 system('type extraireCaractTraceGD.m');
 system('type traceGD.m');
 
+%%%
+% Voici les parametres optimaux :
+% m = 8; n = 6; nTraits = 10;
+% ou
+% m = 10; n = 7; nTraits = 10;
+ m = 9; n = 6; nTraits = 10;
 %%
 % On extrait les caracteristiques de la base d'apprentissage :
 for iImage=1 : nbImageBaseApp
@@ -259,8 +266,8 @@ for iImage=1 : nbImageBaseTest
 end
 
 %% Resultats pour la trace gauche
-confusionkppvG = make_confusion(resultatsG)
-confusionDEG = make_confusion(resultatsEuclidMinG)
+confusionkppvG = make_confusion(resultatsG);
+confusionDEG = make_confusion(resultatsEuclidMinG);
 
 %%
 % Soit un taux moyen de réussite de :
@@ -268,8 +275,8 @@ mean(diag(confusionkppvG))
 mean(diag(confusionDEG))
 
 %% Resultats pour la trace droite
-confusionkppvD = make_confusion(resultatsD)
-confusionDED = make_confusion(resultatsEuclidMinD)
+confusionkppvD = make_confusion(resultatsD);
+confusionDED = make_confusion(resultatsEuclidMinD);
 
 %%
 % Soit un taux moyen de réussite de :
@@ -303,17 +310,49 @@ for iImage=1 : nbImageBaseTest
 
 end
 
-%% Combinaison des classifieurs
-% On va combiner le classifieur kppv minkoski3 avec le traceGD precedent :
-
-
-%% Resultats pour la trace gauche
+%% Resultats pour la trace gauche droite
 confusionDEGD = make_confusion(resultatsEuclidMinGD);
-diag(confusionDEGD);
+diag(confusionDEGD)
 
-%%
-% Soit un taux moyen de réussite de :
+%%%
+% On remarque qu'avec cette methode les 9 sont bien mieux discriminés mais
+% le reste non, le taux moyen de réussite étant de :
 mean(diag(confusionDEGD))
+
+%% Combinaison des classifieurs
+% On va combiner le classifieur kppv minkoski3 avec le distance euclidienne
+% trace droite et le distance euclidienne gauche droite.
+% Sur les matrices de confusion predentes, les certitudes sont les colonnes
+% qui ne contiennent une seule donnée sur la diagonale. On va commencer par
+% le plus précis pour finir par le moins précis mais qui discrimine mieux
+% les 9 des 8. Dans chaque cas on reprend les parametres optimaux.
+
+% Vecteurs des certitudes par méthodes :
+certainKppvMink3 = [ 0 1 3 4 5 6 ];
+certainDETD = [ 0 1 2 3 5 6 7 ];
+
+% Les calculs étants déja effectués, on reprend avec les résultats d'avant:
+for iImage=1 : nbImageBaseTest
+    if(ismember(resultatsKppvMink(iImage),certainKppvMink3))
+        resultatsCombi(iImage) = resultatsKppvMink(iImage);
+    
+    else if (ismember(resultatsEuclidMinD(iImage),certainDETD))
+            resultatsCombi(iImage) = resultatsEuclidMinD(iImage);
+         
+        else if (resultatsEuclidMinGD(iImage)==9)
+                resultatsCombi(iImage) = 9;
+            else
+                resultatsCombi(iImage) = 8;
+            end
+        end
+    end
+end
+
+%% Resultats combinés
+confusionCombi = make_confusion(resultatsCombi);
+diag(confusionCombi)
+
+mean(diag(confusionCombi))
 
 %% *Annexe 1 :* Code MATLAB
 % Voici une copie du code matlab qui vient d'Ãªtre exÃ©cutÃ© :
