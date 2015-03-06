@@ -1,0 +1,12 @@
+\BOOKMARK [0][-]{chapter*.2}{Introduction}{}% 1
+\BOOKMARK [0][-]{chapter.1}{Les donn\351es}{}% 2
+\BOOKMARK [0][-]{chapter.2}{D\351coupe des imagettes}{}% 3
+\BOOKMARK [0][-]{chapter.3}{Apprentissage du mod\350le}{}% 4
+\BOOKMARK [0][-]{chapter.4}{Classification}{}% 5
+\BOOKMARK [1][-]{section.4.1}{Reconnaissance avec distance euclidienne minimale sur mod\350le moyen}{chapter.4}% 6
+\BOOKMARK [1][-]{section.4.2}{D\351cision par la m\351thode des k plus proches voisins}{chapter.4}% 7
+\BOOKMARK [1][-]{section.4.3}{M\351thode des k-ppvs avec d'autres distances}{chapter.4}% 8
+\BOOKMARK [1][-]{section.4.4}{Utilisation d'autres caract\351ristiques}{chapter.4}% 9
+\BOOKMARK [1][-]{section.4.5}{Combinaison de classifieurs}{chapter.4}% 10
+\BOOKMARK [1][-]{section.4.6}{R\351sultats finaux}{chapter.4}% 11
+\BOOKMARK [0][-]{chapter.5}{Conclusion}{}% 12

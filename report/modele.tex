@@ -1,0 +1,19 @@
+Pour réaliser notre projet, nous pouvions utiliser tout un panel
+de caractéristiques adaptées à la reconnaissance de formes. Ces 
+caractéristiques permettent d'obtenir des informations sur chaque
+échantillon et ainsi de créer une \og carte d'identité \fg pour
+chaque chiffres. Il sera ainsi plus facile de comparer la base
+d'apprentissage aux échantillons de la base de test. \\
+Les caractéristiques proposées par M. Chatelain dans l'énoncé du
+projet sont au nombre de deux. La première consiste en l'élaboration
+de profils pour chaque imagette. C'est la première méthode que
+nous avons décidé d'implémenter. Suite à une petite étude que nous
+avons fait, nous avons constaté que la méthode était optimal pour un
+nombre de profils de 10. \\
+La seconde méthode consiste en l'étude de densité de pixels au sein de 
+l'imagette. Encore une fois, nous avons déterminé que les meilleurs
+paramètres pour l'utilisation de cette méthode consiste à diviser 
+l'imagette en 10 rangées pour 5 colonnes. \\
+Après extraction complète du modèle, celui-ci se trouve dans une 
+matrice qui sauvegarde pour chaque imagette toute les caractéristiques.
+Cette matrice est enregistré sous la forme \texttt{modeleRDF.mat}.

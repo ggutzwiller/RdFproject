@@ -1,0 +1,880 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{color}
+
+\sloppy
+\definecolor{lightgray}{gray}{0.5}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+    
+    
+\section*{Projet DOC Rdf 2015  \texttt{BARON GUTZWILLER ASI 4}}
+
+\begin{par}
+
+\includegraphics [width=4in]{asir.jpg}
+
+\end{par} \vspace{1em}
+
+\subsection*{Contents}
+
+\begin{itemize}
+\setlength{\itemsep}{-1ex}
+   \item \textit{RAZ}
+   \item \textbf{Introduction}
+   \item \textbf{1 - Les donn�es}
+   \item \textbf{2 - D�coupe des imagettes}
+   \item \textbf{3 - Apprentissage du mod�le}
+   \item \textbf{4 - Classification}
+   \item 4 - a : Reconaissance avec distance euclidienne minimale sur mod�le moyen
+   \item \textit{R�sultats de cette methode}
+   \item Test sans moyenner les classes
+   \item \textit{Resultats de cette methode}
+   \item 4 - b : D�cision avec la m�thode des kppv
+   \item \textit{Resultats de cette methode}
+   \item \textbf{M�thode des kppv avec d'autres distances}
+   \item \textbf{Autres caract�ristiques}
+   \item \textit{R�sultats pour la trace gauche}
+   \item \textit{R�sultats pour la trace droite}
+   \item \textbf{Caract�ristique avec trace gauche ET droite}
+   \item \textit{R�sultats pour la trace gauche droite}
+   \item \textbf{Combinaison des classifieurs}
+   \item \textit{R�sultats combin�s}
+   \item \textbf{Conclusion}
+   \item \textit{\textbf{INSA de Rouen} - 2015}
+\end{itemize}
+
+
+\subsection*{\textit{RAZ}}
+
+\begin{verbatim}
+close all; clc; clear all; format short g;
+\end{verbatim}
+
+
+\subsection*{\textbf{Introduction}}
+
+\begin{par}
+Voici notre projet de reconnaissance de chiffres propos� par M.Chatelain
+\end{par} \vspace{1em}
+
+
+\subsection*{\textbf{1 - Les donn�es}}
+
+\begin{par}
+Base d'apprentissage :
+\end{par} \vspace{1em}
+\begin{par}
+
+\includegraphics [width=4in]{app.tif}
+
+\end{par} \vspace{1em}
+\begin{par}
+Base de test :
+\end{par} \vspace{1em}
+\begin{par}
+
+\includegraphics [width=4in]{test.tif}
+
+\end{par} \vspace{1em}
+
+
+\subsection*{\textbf{2 - D�coupe des imagettes}}
+
+\begin{par}
+On r�utilise les fonctions donn�es par M.Chatelain pour proc�der au d�coupage des imagettes, nous les avons condens�es dans un crop\_image.m :
+\end{par} \vspace{1em}
+\begin{verbatim}
+% Base d'apprentissage
+[nbImageBaseApp, imagesChiffreCroppe] = crop_image('app.tif');
+
+% Base de test
+[nbImageBaseTest, imagesChiffreCroppeT] = crop_image('test.tif');
+\end{verbatim}
+
+
+\subsection*{\textbf{3 - Apprentissage du mod�le}}
+
+\begin{par}
+Dans la suite, les parametres m,n et nTraits ont �t� test�s via des boucles "for" pour trouver les optimum, on affichera seulement les r�sultats obtenus avec ces param�tres pour plus de claret�.
+\end{par} \vspace{1em}
+\begin{verbatim}
+% Param�tres optimaux
+m = 10; % rang�es de densit�e
+n = 5; % col de densit�
+nTraits = 10; % nb de traits
+
+modele = zeros(n*m+nTraits*2, nbImageBaseApp);
+\end{verbatim}
+\begin{par}
+Voici les fonctions d'extraction des caract�ristiques de base :
+\end{par} \vspace{1em}
+\begin{verbatim}
+type extraireCaractBase.m;
+type extraitDensites.m;
+type extraitProfils.m;
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+function caract = extraireCaractBase( imagette, nRang, nCol, nTrait )
+%UNTITLED2 Summary of this function goes here
+%   Detailed explanation goes here
+
+densite = extraitDensites(imagette, nRang, nCol);
+
+profil = extraitProfils(imagette, nTrait);
+
+caract = [profil' densite'];
+
+end
+
+
+function D = extraitDensites( imagette, m, n )
+    % On inverse la matrice pour avoir des 1 o� l'on veut compter
+    imagette = ~imagette;
+
+    [h, l] = size(imagette);
+    % On definit notre d�coupage
+    x = floor(linspace(1, h, m+1));
+    y = floor(linspace(1, l, n+1));
+
+    D = zeros(m*n,1);
+
+    % On va rechercher dans chaque bloc le nombre de 1
+    for i=1:m
+        for j=1:n
+            % s = sum(sum(imagette(x(i):x(i+1)-1, y(j):y(j+1)-1)));
+            % la matrice �tant surtout compos�e de 0 la recherche va 2 fois
+            % plus vite que la somme !! (vu avec "Run and Time")
+            s = size(find(imagette(x(i):x(i+1)-1, y(j):y(j+1)-1)==1),1);
+            D((i-1)*n+j) = s/((x(i+1)-x(i))*(y(j+1)-y(j)));
+        end
+    end
+end
+
+function profil = extraitProfils( imagette, n )
+    % On r�cup�re les dimension pour d�finir ensuite o� chercher (y)
+    [h, l] = size(imagette);
+    y = floor(linspace(h/n, h-h/n, n));
+
+    profil = zeros(2*n,1);
+    
+    for i=1:n
+        % On cherche le premier 1 � gauche, bord gauche du chiffre
+        profil(i) = find(imagette(y(i),:) == 0, 1);
+        % On cherche le dernier 1 � droite, bord droit du chiffre
+        profil(i+n) = find(imagette(y(i),:) == 0, 1, 'last');
+    end
+    profil = profil/l;
+end
+\end{verbatim} \color{black}
+    \begin{par}
+On extrait les caract�ristiques de la base d'apprentissage :
+\end{par} \vspace{1em}
+\begin{verbatim}
+for iImage=1 : nbImageBaseApp
+
+    % extraction des caract�ristiques
+    caract = extraireCaractBase(imagesChiffreCroppe{iImage}, m, n, nTraits);
+    % cr�ation du mod�le
+    modele(:,iImage) = caract;
+end
+\end{verbatim}
+\begin{par}
+Astuce : la classe de l'image courante est donn�e par : iClasse = fix((iImage-1)/20)
+\end{par} \vspace{1em}
+\begin{verbatim}
+classes = @(i) floor((i-1)/20);
+\end{verbatim}
+\begin{par}
+Enfin, on sauvegarde le mod�le :
+\end{par} \vspace{1em}
+\begin{verbatim}
+save('modeleRDF.mat', 'modele');
+\end{verbatim}
+
+
+\subsection*{\textbf{4 - Classification}}
+
+\begin{par}
+Extraction des caract�ristiques des exemples
+\end{par} \vspace{1em}
+\begin{verbatim}
+caractImagesTest = zeros(n*m+nTraits*2, nbImageBaseTest);
+
+for iImage=1 : nbImageBaseTest
+
+    caractImagesTest(:,iImage) = ...
+           extraireCaractBase(imagesChiffreCroppeT{iImage}, m, n, nTraits);
+end
+\end{verbatim}
+
+
+\subsection*{4 - a : Reconaissance avec distance euclidienne minimale sur mod�le moyen}
+
+\begin{verbatim}
+% Cr�ation du mod�le moyen
+modeleDEM = zeros(size(modele,1),10);
+for i=0:9
+    for j = 1:size(modele,1)
+        modeleDEM(j, i+1) = sum(modele(j, i*20+1:(i+1)*20))/20;
+    end
+end
+
+% Classes des images moyennes
+classeMoy = [ 0 1 2 3 4 5 6 7 8 9 ];
+
+% D�finition de la distance euclidienne
+dEuclid = @(x,y) sqrt(sum((x - y) .^ 2));
+
+resultatsEuclidMin = zeros(1,nbImageBaseTest);
+
+% Recherche du chiffre qui approche le plus du mod�le moyen
+for iImage=1 : nbImageBaseTest
+
+resultatsEuclidMin(iImage) = ...
+    detClassdMin(caractImagesTest(:,iImage)',modeleDEM,classeMoy,dEuclid);
+
+end
+\end{verbatim}
+
+
+\subsection*{\textit{R�sultats de cette methode}}
+
+\begin{verbatim}
+confusionDEM = make_confusion(resultatsEuclidMin)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+confusionDEM =
+
+  Columns 1 through 6
+
+            1            0            0            0            0            0
+            0          0.9          0.1            0            0            0
+            0            0          0.9            0            0            0
+            0            0            0          0.5            0            0
+            0            0            0            0          0.9            0
+            0            0            0            0            0            1
+            0            0            0            0            0            0
+            0            0            0          0.1            0            0
+            0          0.2            0            0            0            0
+            0            0            0            0            0            0
+
+  Columns 7 through 10
+
+            0            0            0            0
+            0            0            0            0
+          0.1            0            0            0
+            0            0            0          0.5
+            0          0.1            0            0
+            0            0            0            0
+            1            0            0            0
+            0          0.9            0            0
+            0            0          0.8            0
+            0          0.1          0.3          0.6
+
+\end{verbatim} \color{black}
+    \begin{par}
+Voici sur les chiffres de 0 a 9 les taux de reconnaissance de cette m�thode :
+\end{par} \vspace{1em}
+\begin{verbatim}
+diag(confusionDEM)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+            1
+          0.9
+          0.9
+          0.5
+          0.9
+            1
+            1
+          0.9
+          0.8
+          0.6
+
+\end{verbatim} \color{black}
+    \begin{par}
+Soit un taux moyen de :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(diag(confusionDEM))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.85
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{Test sans moyenner les classes}
+
+\begin{verbatim}
+% Recherche du chiffre qui approche le plus du mod�le
+for iImage=1 : nbImageBaseTest
+
+    resultatsEuclidMin(iImage) = ...
+          detClassdMin(caractImagesTest(:,iImage)',modele,classes,dEuclid);
+end
+\end{verbatim}
+
+
+\subsection*{\textit{Resultats de cette methode}}
+
+\begin{verbatim}
+confusionDE = make_confusion(resultatsEuclidMin);
+\end{verbatim}
+\begin{par}
+Voici sur les chiffres de 0 � 9 les taux de reconnaissance de cette methode :
+\end{par} \vspace{1em}
+\begin{verbatim}
+diag(confusionDE)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+            1
+            1
+            1
+          0.7
+            1
+            1
+            1
+          0.9
+            1
+          0.6
+
+\end{verbatim} \color{black}
+    \begin{par}
+Soit un taux moyen de :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(diag(confusionDE))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.92
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{4 - b : D�cision avec la m�thode des kppv}
+
+\begin{verbatim}
+resultatsKppv = zeros(1,nbImageBaseTest);
+
+for tests=1:4
+
+    for iImage=1 : nbImageBaseTest
+
+      tppv = kppv(caractImagesTest(:,iImage)',tests,modele,classes,dEuclid);
+
+      resultatsKppv(iImage) = mode(tppv(1,:));
+    end
+
+    confusionKPPV = make_confusion(resultatsKppv);
+
+    succes(tests,:) = diag(confusionKPPV);
+end
+\end{verbatim}
+
+
+\subsection*{\textit{Resultats de cette methode}}
+
+\begin{par}
+Voici les taux de reconnaissance de cette methode pour les k test�s :
+\end{par} \vspace{1em}
+\begin{verbatim}
+succes
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+succes =
+
+  Columns 1 through 6
+
+            1            1            1          0.7            1            1
+            1            1            1          0.9            1            1
+            1            1            1          0.7          0.9            1
+            1            1            1          0.7          0.9            1
+
+  Columns 7 through 10
+
+            1          0.9            1          0.6
+            1            1          0.8          0.6
+            1          0.9          0.9          0.6
+            1            1          0.9          0.6
+
+\end{verbatim} \color{black}
+    \begin{par}
+Soit en taux moyen par k :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(succes')
+\end{verbatim}
+\begin{par}
+On voit que le k optimal est 2.
+\end{par} \vspace{1em}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.92         0.93          0.9         0.91
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{\textbf{M�thode des kppv avec d'autres distances}}
+
+\begin{par}
+D�finition de la distance minkowski 3 et manhattan :
+\end{par} \vspace{1em}
+\begin{verbatim}
+dMinkow3 = @(x,y) nthroot(sum(abs(x - y) .^ 3),3);
+dManhat = @(x,y) sum(abs(x - y));
+\end{verbatim}
+\begin{par}
+Pour Manhattan :
+\end{par} \vspace{1em}
+\begin{verbatim}
+resultatsKppvMan = zeros(1,nbImageBaseTest);
+
+for iImage=1 : nbImageBaseTest
+
+    tppv = kppv(caractImagesTest(:,iImage)',2,modele,classes,dManhat);
+
+    resultatsKppvMan(iImage) = mode(tppv(1,:));
+end
+
+confusionKPPVMan = make_confusion(resultatsKppvMan);
+
+diag(confusionKPPVMan)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+            1
+            1
+            1
+          0.9
+          0.9
+            1
+            1
+          0.9
+          0.9
+          0.6
+
+\end{verbatim} \color{black}
+    \begin{par}
+Soit un taux moyen de r�ussite de :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(diag(confusionKPPVMan))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.92
+
+\end{verbatim} \color{black}
+    \begin{par}
+Pour Minkowski de degr� 3 :
+\end{par} \vspace{1em}
+\begin{verbatim}
+resultatsKppvMink = zeros(1,nbImageBaseTest);
+
+for iImage=1 : nbImageBaseTest
+
+    tppv = kppv(caractImagesTest(:,iImage)',2,modele,classes,dMinkow3);
+
+    resultatsKppvMink(iImage) = mode(tppv(1,:));
+end
+
+confusionKPPVMink = make_confusion(resultatsKppvMink);
+
+diag(confusionKPPVMink)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+            1
+            1
+            1
+          0.9
+            1
+            1
+            1
+            1
+          0.9
+          0.6
+
+\end{verbatim} \color{black}
+    \begin{par}
+Soit un taux moyen de r�ussite de :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(diag(confusionKPPVMink))
+\end{verbatim}
+\begin{par}
+On gagne un pourcent de plus avec Minkowski de degr� 3 mais les 9 posent toujours probl�me.
+\end{par} \vspace{1em}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.94
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{\textbf{Autres caract�ristiques}}
+
+\begin{par}
+Nous allons tenter de mettre en oeuvre d'autres caracteristiques comme la trace vers la gauche ou vers la droite. Voici la fonction trace et quelques exemples de son action :
+\end{par} \vspace{1em}
+\begin{verbatim}
+type traceGD.m
+
+figure
+subplot(1,3,1)
+imagesc(traceGD(imagesChiffreCroppe{167},'g'))
+subplot(1,3,2)
+imagesc(imagesChiffreCroppe{167})
+subplot(1,3,3)
+imagesc(traceGD(imagesChiffreCroppe{167},'d'))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+function [ imagette ] = traceGD( imagette, dir )
+%traceGD trace de l'image vers gauche (g) ou droite (d) (gauche par defaut)
+%   Detailed explanation goes here
+
+hauteur = size(imagette,1);
+
+if(dir=='d')
+    for i=1:hauteur
+        p = find(imagette(i,:) == 0, 1, 'last');
+        imagette(i,p:end)=0;
+    end
+else
+    for i=1:hauteur
+        p = find(imagette(i,:) == 0, 1);
+        imagette(i,1:p)=0;
+    end
+end
+
+end
+\end{verbatim} \color{black}
+    
+\includegraphics [width=4in]{squelette_01.eps}
+\begin{par}
+On recommence l'apprentissage : Voici la fonction d'extraction des caract�ristiques avec trace :
+\end{par} \vspace{1em}
+\begin{verbatim}
+type extraireCaractTraceGD.m
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+function caract = extraireCaractTraceGD( imagette, dir, nRang, nCol, nTrait )
+%UNTITLED2 Summary of this function goes here
+%   Detailed explanation goes here
+
+imagetteTracee = traceGD(imagette, dir);
+
+densite = extraitDensites(imagetteTracee, nRang, nCol);
+
+profil = extraitProfilGD(imagetteTracee, nTrait, dir);
+
+caract = [profil' densite'];
+
+end
+
+\end{verbatim} \color{black}
+    \begin{par}
+Voici les 3 sets de param�tres optimaux :
+\end{par} \vspace{1em}
+\begin{verbatim}
+% m = 8; n = 6; nTraits = 10;
+% m = 10; n = 7; nTraits = 10;
+m = 9; n = 6; nTraits = 10;
+\end{verbatim}
+\begin{par}
+On extrait les caract�ristiques de la base d'apprentissage :
+\end{par} \vspace{1em}
+\begin{verbatim}
+for iImage=1 : nbImageBaseApp
+
+    % extraction des caract�ristiques pour la trace gauche
+    caractTG = extraireCaractTraceGD(...
+                          imagesChiffreCroppe{iImage}, 'g', m, n, nTraits);
+    % cr�ation du mod�le pour la trace gauche
+    modeleTG(:,iImage) = caractTG;
+
+    % extraction des caract�ristiques pour la trace droite
+    caractTD = extraireCaractTraceGD(...
+                          imagesChiffreCroppe{iImage}, 'd', m, n, nTraits);
+    % cr�ation du mod�le pour la trace droite
+    modeleTD(:,iImage) = caractTD;
+end
+\end{verbatim}
+\begin{par}
+On teste avec kppv Minkowski 3 et distance euclidienne mini :
+\end{par} \vspace{1em}
+\begin{verbatim}
+for iImage=1 : nbImageBaseTest
+
+    caractImagesTestG(:,iImage) = ...
+    extraireCaractTraceGD(imagesChiffreCroppeT{iImage}, 'g', m, n, nTraits);
+
+    caractImagesTestD(:,iImage) = ...
+    extraireCaractTraceGD(imagesChiffreCroppeT{iImage}, 'd', m, n, nTraits);
+
+    resultatsEuclidMinG(iImage) = ...
+       detClassdMin(caractImagesTestG(:,iImage)',modeleTG,classes,dEuclid);
+
+    resultatsEuclidMinD(iImage) = ...
+        detClassdMin(caractImagesTestD(:,iImage)',modeleTD,classes,dEuclid);
+
+    tppvG = kppv(caractImagesTestG(:,iImage)',1,modeleTG,classes,dMinkow3);
+
+    tppvD = kppv(caractImagesTestD(:,iImage)',1,modeleTD,classes,dMinkow3);
+
+    resultatsG(iImage) = mode(tppvG(1,:));
+
+    resultatsD(iImage) = mode(tppvD(1,:));
+end
+\end{verbatim}
+
+
+\subsection*{\textit{R�sultats pour la trace gauche}}
+
+\begin{verbatim}
+confusionkppvG = make_confusion(resultatsG);
+confusionDEG = make_confusion(resultatsEuclidMinG);
+\end{verbatim}
+\begin{par}
+Soit un taux moyen de r�ussite de :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(diag(confusionkppvG))
+mean(diag(confusionDEG))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.88
+
+
+ans =
+
+         0.87
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{\textit{R�sultats pour la trace droite}}
+
+\begin{verbatim}
+confusionkppvD = make_confusion(resultatsD);
+confusionDED = make_confusion(resultatsEuclidMinD);
+\end{verbatim}
+\begin{par}
+Soit un taux moyen de r�ussite de :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(diag(confusionkppvD))
+mean(diag(confusionDED))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.93
+
+
+ans =
+
+         0.93
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{\textbf{Caract�ristique avec trace gauche ET droite}}
+
+\begin{par}
+Le but ici est de mieux discriminer les 9 :
+\end{par} \vspace{1em}
+\begin{verbatim}
+% Param�tres optimaux :
+m = 8; n = 10;
+
+% On extrait les caract�ristiques de la base d'apprentissage :
+for iImage=1 : nbImageBaseApp
+
+    % extraction des caract�ristiques pour la trace gauche droite
+    caractTGD = extraitDensites(traceGD(traceGD(...
+                             imagesChiffreCroppe{iImage}, 'g'),'d'), m, n);
+
+    % cr�ation du modele pour la trace gauche droite
+    modeleTGD(:,iImage) = caractTGD;
+end
+
+for iImage=1 : nbImageBaseTest
+
+    caractImagesTestGD(:,iImage) = extraitDensites(traceGD(traceGD(...
+                            imagesChiffreCroppeT{iImage}, 'g'),'d'), m, n);
+
+    resultatsEuclidMinGD(iImage) = ...
+      detClassdMin(caractImagesTestGD(:,iImage)',modeleTGD,classes,dEuclid);
+end
+\end{verbatim}
+
+
+\subsection*{\textit{R�sultats pour la trace gauche droite}}
+
+\begin{verbatim}
+confusionDEGD = make_confusion(resultatsEuclidMinGD);
+diag(confusionDEGD)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+            1
+          0.9
+          0.6
+          0.5
+            1
+          0.9
+            1
+          0.7
+          0.7
+            1
+
+\end{verbatim} \color{black}
+    \begin{par}
+On remarque qu'avec cette methode les 9 sont bien mieux discrimin�s mais le reste non, le taux moyen de r�ussite �tant de :
+\end{par} \vspace{1em}
+\begin{verbatim}
+mean(diag(confusionDEGD))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.83
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{\textbf{Combinaison des classifieurs}}
+
+\begin{par}
+On va combiner le classifieur kppv minkoski3 avec le distance euclidienne trace droite et le distance euclidienne trace gauche droite.
+\end{par} \vspace{1em}
+\begin{par}
+Sur les matrices de confusion pr�dentes, les certitudes sont les colonnes qui ne contiennent qu'une seule donn�e sur la diagonale (i.e: on ne confond ces chiffres avec aucun autre).
+\end{par} \vspace{1em}
+\begin{par}
+On va commencer par le plus pr�cis pour finir par le moins pr�cis mais qui discrimine mieux les 9 des 8. Dans chaque cas on reprend les param�tres optimaux.
+\end{par} \vspace{1em}
+\begin{verbatim}
+% Vecteurs des certitudes par m�thodes :
+certainKppvMink3 = [ 0 1 3 4 5 6 ];
+certainDETD = [ 0 1 2 3 5 6 7 ];
+
+% Les calculs �tants d�ja effectu�s, on reprend avec les r�sultats d'avant:
+for iImage=1 : nbImageBaseTest
+    % on teste a chaque fois si l'estimation obtenue est une certitude
+    if(ismember(resultatsKppvMink(iImage),certainKppvMink3))
+        resultatsCombi(iImage) = resultatsKppvMink(iImage);
+
+    % Si non on passe � la m�thode suivante
+    else if (ismember(resultatsEuclidMinD(iImage),certainDETD))
+            resultatsCombi(iImage) = resultatsEuclidMinD(iImage);
+
+        else if (resultatsEuclidMinGD(iImage)==9)
+                resultatsCombi(iImage) = 9;
+            else
+                resultatsCombi(iImage) = 8;
+            end
+        end
+    end
+end
+\end{verbatim}
+
+
+\subsection*{\textit{R�sultats combin�s}}
+
+\begin{verbatim}
+confusionCombi = make_confusion(resultatsCombi);
+diag(confusionCombi)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+            1
+            1
+            1
+          0.9
+            1
+            1
+            1
+            1
+          0.9
+            1
+
+\end{verbatim} \color{black}
+    \begin{verbatim}
+mean(diag(confusionCombi))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+ans =
+
+         0.98
+
+\end{verbatim} \color{black}
+    \begin{par}
+On obtient un taux moyen de r�ussite de 98\%, les confusions �tant avec cette m�thode sur un 3 et un 8 confondus en 9.
+\end{par} \vspace{1em}
+
+
+\subsection*{\textbf{Conclusion}}
+
+\begin{par}
+Nous venons de voir que la reconnaissance de formes est sensible aux parametres initiaux et aux caract�ristiques utilis�es. En combinant des m�thodes plut�t basiques et pas toujours efficaces globalement, on peut cr�er une tr�s bon classifieur.
+\end{par} \vspace{1em}
+
+
+\subsection*{\textit{\textbf{INSA de Rouen} - 2015}}
+
+\begin{par}
+
+\includegraphics [width=4in]{insa.png}
+
+\end{par} \vspace{1em}
+
+
+
+\end{document}
+    

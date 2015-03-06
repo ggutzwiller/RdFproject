@@ -1,0 +1,65 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[top=3cm, bottom=3cm, left=2cm, right=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{listings}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{titlepage}
+    \begin{center}
+        \begin{tikzpicture}[remember picture,overlay]
+            \node[xshift=5.5cm, yshift=-3.6cm] at (current page.north west) {\includegraphics[scale=0.5]{logo-insa.jpg}};
+            \node[xshift=15.5cm, yshift=-3.6cm] at (current page.north west) {\includegraphics[scale=0.18]{logo-asi.jpg}};
+        \end{tikzpicture}
+        \newline{} \newline{} \newline{} \newline{}
+        \huge{\bsc{Document \& Web Sémantique}} \\
+        \rule{\linewidth}{1.5pt}
+        \huge{\textbf{Reconnaissance de Formes}}
+        \rule{\linewidth}{1.5pt} \newline{} \newline{}
+    \end{center}
+    \textit{Auteurs : \hfill Evaluateur :} \\ Julien \bsc{Baron} \hfill Clément \bsc{Chatelain} \\ 
+                                                Grégoire \bsc{Gutzwiller} \\ \\
+    \large{\underline{Cadre du projet : }} \\ \\
+    \normalsize{L'objectif du projet est d'appréhender les différentes
+        étapes d'un système de reconnaissance de formes à travers le
+        développement d'une chaîne de reconnaissance de chiffres 
+        manuscrits sous MATLAB.} \\ \\
+    \begin{center}
+        \textit{Date :} \\ 06 Mars 2015
+    \end{center}
+\end{titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\tableofcontents
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+\input{introduction.tex}
+
+\chapter{Les données}
+\input{donnees.tex}
+
+\chapter{Découpe des imagettes}
+\input{decoupe.tex}
+
+\chapter{Apprentissage du modèle}
+\input{modele.tex}
+
+\chapter{Classification}
+\input{classification.tex}
+
+\chapter{Conclusion}
+\input{conclusion.tex}
+
+
+\end{document}
