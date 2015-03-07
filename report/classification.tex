@@ -3,7 +3,7 @@ les imagettes de la base de test dans différentes classes de chiffres.
 Nous avons mis en place deux méthodes de classification. La première se 
 base sur la distance euclidienne minimale du modèle par rapport à une
 imagette de la base de test. La seconde consiste à réaliser la méthode des
-$ k $ plus proches voisins.
+$ k $ plus proches voisins. Nous nous sommes exclusivement concentrés sur les taux de réussite en TOP1.
 
 \section{Reconnaissance avec distance euclidienne
 minimale sur modèle moyen}
@@ -39,14 +39,14 @@ Avec cette méthode, nous obtenons la matrice de confusion suivante.
     9 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0.1 & 0.3 & 0.6 \\
     \hline
 \end{tabular}
-\caption{Matrice de confusion pour cette méthode}
+\caption{Matrice de confusion en TOP1 pour cette méthode}
 \end{figure} 
 
 Ceci nous donne 85\% de bons résultats avec ce classifieur.
 
 Si nous choisissons en revanche de ne pas utiliser le modèle moyen
 pour chaque classe mais, au contraire, d'utiliser la norme euclidienne
-sur chaque élément du modèle, nous obtenons un résultat de 92\%. Voici 
+sur chaque élément du modèle, nous obtenons un résultat de 92\% en TOP1. Voici 
 les résultats pour chaque classe.
 
 \begin{figure}[h!]
@@ -78,7 +78,7 @@ avec plusieurs k différents.
     0.92 & 0.93 & 0.90 & 0.91 \\
     \hline
 \end{tabular}
-\caption{Bons résultats selon la valeur de k (k = 1, 2, 3, 4)}
+\caption{Bons résultats en TOP1 selon la valeur de k (k = 1, 2, 3, 4)}
 \end{figure} 
 
 Ceci nous amenant en toute logique à utiliser un k égal à 2.
@@ -87,7 +87,7 @@ Ceci nous amenant en toute logique à utiliser un k égal à 2.
 
 Pour essayer d'améliorer nos résultats, nous avons voulu essayer
 d'utiliser de nouvelles distances. Nous nous sommes donc intéressés
-dans un premier temps à la distance de manhattan. Celle-ci nous donne 
+dans un premier temps à la distance de Manhattan. Celle-ci nous donne 
 les résultats suivants.
 
 \begin{figure}[h!]
@@ -117,7 +117,7 @@ Celle-ci nous donne les résultats suivants.
     1 & 1 & 1 & 0.9 & 1 & 1 & 1 & 1 & 0.9 & 0.6  \\
     \hline
 \end{tabular}
-\caption{Résultat avec la distance de Manhattan}
+\caption{Résultat avec la distance de Minkowski}
 \end{figure} 
 
 Ceci donnant un résultat moyen de 94 \%, ce qui est déjà un meilleur
@@ -128,7 +128,7 @@ résultat. C'est donc très encourageant.
 A cette étape du projet, nous avons choisi d'utiliser d'autres     
 caractéristiques. En effet, les tests réalisés sur les classifieurs
 ne montrait pas de grosses améliorations. \\
-Nous nous sommes intéressés à la trace. Il s'agit en quelques sortes, 
+Nous nous sommes intéressés à la trace. Il s'agit en quelque sorte, 
 de réaliser un profil sur un nombre de traits égal au nombre de pixel de
 l'image. La figure suivante permet de visualiser les effets de notre
 fonction \texttt{traceGD.m}.
@@ -165,12 +165,14 @@ taux de reconnaissance.
 
 \section{Combinaison de classifieurs}
 
-Nous allons essayer de combiner les classifieurs kppv/Minkowski3 avec la 
+Nous allons donc essayer de combiner les classifieurs kppv/Minkowski3 avec la 
 DEG/trace Droite et la DEG/trace Gauche-Droite. Nous choisirons les
 paramètres optimaux dans le maximum de cas. \\
-La combinaison de classifieurs commence par les classifieur les plus
-précis pour terminer avec les moins efficace mais qui discrimine mieux 
+La combinaison de ces classifieurs commence par les classifieurs les plus
+précis pour terminer avec le moins efficace mais qui discrimine mieux 
 les 9 des 8. \\
+Dans chaque cas, on vérifiera si le résultat obtenu est certain avec le classifieur utilisé.\\
+S'il ne l'est pas, on passe au classifieur suivant pour essayer de déterminer avec exactitude la classe.
 
 \section{Résultats finaux}
 
@@ -187,8 +189,8 @@ taux de bonnes réponses de 98\%, voir le vecteur de résultat suivant.
     1 & 1 & 1 & 0.9 & 1 & 1 & 1 & 1 & 0.9 & 1  \\
     \hline
 \end{tabular}
-\caption{Résultat avec la distance de Manhattan}
+\caption{Résultat des classifieurs combinés}
 \end{figure} 
 
 Les confusions restantes sont obtenues sur un 3 et un 8 que notre
-chaîne de reconnaissance de formes confonds avec des 9. 
+chaîne de reconnaissance de formes confond avec des 9. 
